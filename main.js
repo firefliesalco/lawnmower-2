@@ -1,7 +1,7 @@
 //---------------------\\
 //------VARIABLES------\\
 //---------------------\\
-
+//I was never here lol :) :)
 //HTML Variables
 var canvas;
 var ctx;
