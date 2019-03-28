@@ -192,8 +192,6 @@ function load(){
 	
 	let currency = localStorage.getItem("currencies");
 	loadCurrency(currency, "Money");
-	loadCurrency(currency, "Currency 2");
-	loadCurrency(currency, "Le Currency Tres");
 }
 
 function setup(){
