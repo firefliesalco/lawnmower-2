@@ -1,0 +1,45 @@
+canvas {
+	position:fixed;
+	top:50%;
+	left:50%;
+	transform: translate(-50%, -50%);
+}
+
+#title{
+
+	position:fixed;
+	top:-4%;
+	font-size:5vh;
+	transform:translate(-50%,0);
+	left:50%;
+
+}
+.container {
+
+	outline:solid;
+	outline-width:2px;
+	background-color:#dcdcdc;
+
+}
+
+#currencyDiv {
+	position:fixed;
+	top: 30%;
+	left:2%;
+	padding:0px 0px 1px;
+	width: 200px;
+	
+}
+
+#currency {
+	position:relative;
+	top:-10%;
+	width:100%;
+	background-color:#cdcdcd;
+	text-align:center;
+}
+
+body {
+	font-family: Verdana
+}
+
