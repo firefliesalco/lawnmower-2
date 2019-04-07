@@ -6,6 +6,8 @@
 var canvas;
 var ctx;
 var divCurrency;
+var scientific;
+var title;
 //Game Data Variables
 var fields = [];
 var fieldData = {};
@@ -17,10 +19,9 @@ var balance = {};
 //----------------------\\
 
 //Field functions
-var Field = function(id, barrenColor, grownColor, mColor){
+var Field = function(id, growthColors, mColor){
 	this.id = id;	
-	this.barrenColor = barrenColor;
-	this.grownColor = grownColor;
+	this.growthColors = growthColors;
 	this.mColor = mColor;
 }
 
@@ -28,8 +29,13 @@ var FieldData = function(){
 	var grid;
 	var size;
 	var timeout;
-	var x = 0;
-	var y = 0;
+	this.x = 0;
+	this.y = 0;
+	this.maxGrowth = 1;
+	this.growthSpeed = 10;
+	this.growthPower = 0.05;
+	this.totalTicks = 0;
+	this.moneyMade = new Number(0,0);
 }
 
 function initField(data){
@@ -54,41 +60,146 @@ function initField(data){
 
 
 //Other Game Functions
+function createNumber(base){
+	let v = base;
+	let e = 0;
+	while(v >= 10){
+		v /= 10;
+		e++;
+	}
+	while(v < 1){
+		v *= 10;
+		e--;
+	}
+	console.log("yep");
+	return new Number(v, e);
+}
 
-function colorGradient(c1, c2, dist){
+function cloneNumber(num){
+	return new Number(num.value, num.exponent);
+}
+
+var Number = function(value, exponent){
+	
+	this.value = value;
+	this.exponent = exponent;
+	
+	this.add = function(number){
+		if(this.exponent - number.exponent < 10){
+			this.value += number.value * Math.pow(10, number.exponent - this.exponent);
+			while(this.value >= 10){
+				this.value /= 10;
+				this.exponent++;
+			}
+		}
+	}
+	
+	this.subtract = function(number){
+		if(this.exponent - number.exponent < 10){
+			this.value -= number.value * Math.pow(10, number.exponent - this.exponent);
+			while(this.value < 1){
+				this.value *= 10;
+				this.exponent--;
+			}
+		}
+	}
+	
+	this.multiply = function(number){
+		this.exponent += number.exponent;
+		this.value *= number.value;
+		while(this.value >= 10){
+			this.value /= 10;
+			this.exponent++;
+		}
+		while(this.value < 1){
+			this.value *= 10;
+			this.exponent--;
+		}
+	}
+	
+	this.divide = function(number){
+		this.exponent -= number.exponent;
+		this.value /= number.value;
+		while(this.value >= 10){
+			this.value /= 10;
+			this.exponent++;
+			console.log("big");
+		}
+		while(this.value < 1){
+			this.value *= 10;
+			this.exponent--;
+			console.log("small");
+		}
+	}
+	
+	this.compare = function(number){
+		
+		if(this.exponent > number.exponent){
+			return 1;
+		} else {
+			if(this.exponent == number.exponent){
+				if(this.value > number.value)
+					return 1;
+				else if(this.value < number.value)
+					return -1;
+				else
+					return 0;
+			} else {
+				return -1;
+			}
+		}
+		return 0;
+		
+	}
+	
+	this.makeLookGood = function(){
+		if(scientific.checked){
+			let e = Math.floor(this.value*10)/10;
+			if((""+e).length == 1)
+				e += ".0";
+			return e + "e" + this.exponent;
+		} else {
+			let groups = ["", "K", "M", "B", "T", "Qu", "Qt", "Sx", "Sp", "O", "N", "D", "Ud", "Dd", "Td", "Qud", "Qtd"];
+			let v = this.value * Math.pow(10, this.exponent%3);
+			let r = v > 100 ? 1 : v > 10 ? 10 : 100;
+			let s = "" + Math.floor(v*r)/r;
+			if(s.split(".").length == 1 && r != 1)
+				s+= ".";
+			console.log(s);
+			while((r == 100 && s.split(".")[1].length < 2) || (r == 10 && s.split(".")[1].length < 1))
+				s += "0";
+			return s + " " + groups[Math.floor(this.exponent/3)];
+			
+		}
+	}
+	
+}
+
+
+
+function colorGradient(field, dist){
+
+	let c1 = field.growthColors[Math.floor(dist)];
+	let c2 = field.growthColors[Math.floor(dist)+1];
 	arr = [];
 	for(var i = 0; i < 3; i++){
-		arr.push(c1[i] + Math.floor((c2[i]-c1[i])*dist));
+		arr.push(c1[i] + Math.floor((c2[i]-c1[i])*(dist%1)));
 	}
 	return arr;
 }
 
-function tick(){
-	
-	let field = fields[currentFieldIndex];
-	let data = fieldData[field.id];
-	let even = data.size%2==0;
+function moveMachine(data){
+
 	let my = data.size-1;
 	if(data.x==0&&data.y==0){
-		if(even){
-			data.y+=1;
-		}else{
-			data.x+=1;
-		}
-	}else if((even&&data.y==0)||(!even&&data.y==my)){
-		if(!even&&data.x==dy){
-			data.force=true;
-		}
-		if(data.force){
-			data.y++;
-			if(data.y==my)
-				data.force=false;
-		}else{
-			data.x--;
-		}
+		data.y+=1;
+	}else if(data.y==0){
+		
+		data.x--;
+		
 	}
-	else if(data.x%2==0==even){
-		if(data.y==my||(!even&&data.y==my-1&&data.x!=my)){
+	else if(data.x%2==0){
+		if(data.y==my){
 			data.x++;
 		}else{
 			data.y++;
@@ -96,15 +207,55 @@ function tick(){
 		
 	}else{
 		
-		if(data.y==0||(even&&data.y==1&&data.x!=my)){
+		if(data.y==1&&data.x!=my){
 			data.x++;
 		}else{
 			data.y--;
 		}
 		
 	}
+
+}
+
+function growField(data){
+
+	for(var i = 0; i < data.growthSpeed; i++){
+		
+		let x = Math.floor(Math.random()*data.size);
+		let y = Math.floor(Math.random()*data.size);
+		
+		data.grid[y][x] = Math.min(data.grid[y][x]+data.growthPower, data.maxGrowth-0.01);
+		
+
+	}	
+
+}
+
+function tick(){
 	
-	setTimeout(tick, fieldData[fields[currentFieldIndex].id].timeout/10);
+	let field = fields[currentFieldIndex];
+	let data = fieldData[field.id];
+
+	moveMachine(data);
+	console.log("yes");
+	growField(data);
+	var moneyEarned = new Number(0,0);
+	if(data.grid[data.y][data.x]>0.9){
+
+		data.grid[data.y][data.x] = 0;
+		moneyEarned.add(new Number(1,0));
+		balance["Money"].add(moneyEarned);
+		data.moneyMade.add(moneyEarned);
+		updateCurrency("Money");
+	}
+	data.totalTicks++;
+	let persec = cloneNumber(data.moneyMade);
+	console.log(3);
+	persec.divide(createNumber(data.totalTicks));
+	console.log(2);
+	title.innerHTML = field.name + " (" + persec.makeLookGood() + " /s)"
+	console.log("1");
+	setTimeout(tick, /*fieldData[fields[currentFieldIndex].id].timeout*/100);
 }
 
 function buy(currency, price){
@@ -120,9 +271,18 @@ function updateCurrency(currency){
 	if(e==null){
 		e=document.createElement("p");
 		e.id = "c_" + currency;
-		currencyDiv.appendChild(e);
+		if(currency == "Mold"){
+			let a = document.createElement("a");
+			a.href = "https://www.reddit.com/r/incremental_games/comments/9fx5dc/lawnmowing_game/e60m605";
+			currencyDiv.appendChild(a);
+			a.appendChild(e);
+		}else{
+	
+			currencyDiv.appendChild(e);
+		
+		}
 	}
-	e.innerHTML = "&nbsp;&nbsp;" + currency + " -> " + balance[currency];
+	e.innerHTML = currency + " -> " + balance[currency].makeLookGood();
 }
 
 //---------------------\\
@@ -130,7 +290,7 @@ function updateCurrency(currency){
 //---------------------\\
 
 function initAllFields(){
-	fields.push(new Field("lawn", [64, 193, 0], [65, 124, 36], [255, 0, 0]));
+	fields.push(new Field("Lawn", [[64, 193, 0], [65, 124, 36], [0, 247, 103], [205, 0, 247], [198, 0, 145], [150, 24, 61]], [255, 0, 0]));
 }
 
 function save(){
@@ -143,7 +303,7 @@ function save(){
 		localStorage.setItem(field.id,str);
 	});
 	let currency = "";
-	currency += "Money=" + balance["Money"];
+	currency += "Money=" + balance["Money"].value + "e" + balance["Money"].exponent;
 	
 	localStorage.setItem("currencies", currency);
 }
@@ -172,32 +332,49 @@ function loadDataInt(id, str, def){
 	return def;
 }
 
-function loadCurrency(str, currency){
-	balance[currency] = loadDataInt(currency, str, 0);
-	updateCurrency(currency);
+function loadDataNum(id, str, def){
+	
+	if(str==null)
+		return def;
+	split = str.split(";");
+	split.forEach(function(item){
+		data = item.split("=");
+		data2 = data[1].split("e");
+		if(data[0]==id)
+			return new Number(+data2[0],+data2[1]);
+	});
+	return def;
+	
+}
+
+function loadCurrency(str, currency, update){
+	balance[currency] = loadDataNum(currency, str, new Number(0, 0));
+	if(update)
+		updateCurrency(currency);
 }
 
 function load(){
 	fields.forEach(function(field){
 		let data = new FieldData();
 		let save = localStorage.getItem(field.id);
-		data.size = loadDataInt("size", save, 11);
-		data.timeout = loadDataInt("timeout", save, 1000);
-		data.x = 0;
-		data.y = 0;
-		data.force=false;
+		data.size = loadDataInt("size", save, 10);
+		data.timeout = loadDataInt("timeout", save, 50);
 		initField(data);
 		fieldData[field.id] = data;
 	});
 	
 	let currency = localStorage.getItem("currencies");
-	loadCurrency(currency, "Money");
+	loadCurrency(currency, "Money", true);
+	loadCurrency(currency, "Mulch");
+	loadCurrency(currency, "Mold");
 }
 
 function setup(){
 	canvas = document.getElementById("canvas");
 	ctx = canvas.getContext("2d");
 	divCurrency = document.getElementById("currencies");
+	scientific = document.getElementById("scientific");
+	title = document.getElementById("title");
 	initAllFields();
 	load();
 }
@@ -216,9 +393,9 @@ function renderField(field, px, py, size){
 	let tileSize = size/data.size;
 	for(var y = 0; y < data.size; y++){
 		for(var x = 0; x < data.size; x++){
-			let color = colorGradient(field.barrenColor, field.grownColor, data.grid[y][x]);
+			let color = colorGradient(field, data.grid[y][x]);
 			ctx.fillStyle = "rgb(" + color[0] + "," + color[1] + "," + color[2] + ")";
-			ctx.fillRect(x*tileSize+px, y*tileSize+py, tileSize, tileSize);
+			ctx.fillRect(x*tileSize+px, y*tileSize+py, tileSize+1, tileSize+1);
 		}
 	}
 
@@ -233,8 +410,7 @@ function render(){
 	
 	let canvasSize = canvas.width;
 	
-	renderField(fields[0],0,0,canvasSize/2);
-	renderField(fields[0],canvasSize/2,canvasSize/2,canvasSize/2);
+	renderField(fields[currentFieldIndex],0,0,canvasSize);
 	
 	ctx.fillStyle = "black";
 	ctx.strokeRect(1,1,canvas.width-2,canvas.height-2);
