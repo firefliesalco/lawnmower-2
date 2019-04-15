@@ -31,7 +31,7 @@ var FieldData = function(){
 	var timeout;
 	this.x = 0;
 	this.y = 0;
-	this.maxGrowth = 1;
+	this.maxGrowth = 2;
 	this.growthSpeed = 10;
 	this.growthPower = 0.05;
 	this.totalTicks = 0;
@@ -71,7 +71,6 @@ function createNumber(base){
 		v *= 10;
 		e--;
 	}
-	console.log("yep");
 	return new Number(v, e);
 }
 
@@ -107,28 +106,31 @@ var Number = function(value, exponent){
 	this.multiply = function(number){
 		this.exponent += number.exponent;
 		this.value *= number.value;
-		while(this.value >= 10){
-			this.value /= 10;
-			this.exponent++;
-		}
-		while(this.value < 1){
-			this.value *= 10;
-			this.exponent--;
+		if(this.value != 0){
+			while(this.value >= 10){
+				this.value /= 10;
+				this.exponent++;
+			}
+			while(this.value < 1){
+				this.value *= 10;
+				this.exponent--;
+			}
 		}
 	}
 	
 	this.divide = function(number){
+		
 		this.exponent -= number.exponent;
 		this.value /= number.value;
-		while(this.value >= 10){
-			this.value /= 10;
-			this.exponent++;
-			console.log("big");
-		}
-		while(this.value < 1){
-			this.value *= 10;
-			this.exponent--;
-			console.log("small");
+		if(this.value != 0){
+			while(this.value >= 10){
+				this.value /= 10;
+				this.exponent++;
+			}
+			while(this.value < 1){
+				this.value *= 10;
+				this.exponent--;
+			}
 		}
 	}
 	
@@ -162,13 +164,12 @@ var Number = function(value, exponent){
 			let groups = ["", "K", "M", "B", "T", "Qu", "Qt", "Sx", "Sp", "O", "N", "D", "Ud", "Dd", "Td", "Qud", "Qtd"];
 			let v = this.value * Math.pow(10, this.exponent%3);
 			let r = v > 100 ? 1 : v > 10 ? 10 : 100;
-			let s = "" + Math.floor(v*r)/r;
+			let s = "" + (this.exponent>0?Math.floor(v*r)/r:Math.floor(this.value*Math.pow(10,this.exponent)*100)/100);
 			if(s.split(".").length == 1 && r != 1)
 				s+= ".";
-			console.log(s);
 			while((r == 100 && s.split(".")[1].length < 2) || (r == 10 && s.split(".")[1].length < 1))
 				s += "0";
-			return s + " " + groups[Math.floor(this.exponent/3)];
+			return s + (this.exponent > 0 ? " " + groups[Math.floor(this.exponent/3)] : "");
 			
 		}
 	}
@@ -237,7 +238,6 @@ function tick(){
 	let data = fieldData[field.id];
 
 	moveMachine(data);
-	console.log("yes");
 	growField(data);
 	var moneyEarned = new Number(0,0);
 	if(data.grid[data.y][data.x]>0.9){
@@ -250,12 +250,10 @@ function tick(){
 	}
 	data.totalTicks++;
 	let persec = cloneNumber(data.moneyMade);
-	console.log(3);
 	persec.divide(createNumber(data.totalTicks));
-	console.log(2);
-	title.innerHTML = field.name + " (" + persec.makeLookGood() + " /s)"
-	console.log("1");
-	setTimeout(tick, /*fieldData[fields[currentFieldIndex].id].timeout*/100);
+	persec.multiply(createNumber(1000/data.timeout));
+	title.innerHTML = field.id + " (" + persec.makeLookGood() + " /s)"
+	setTimeout(tick, data.timeout);
 }
 
 function buy(currency, price){
@@ -410,7 +408,8 @@ function render(){
 	
 	let canvasSize = canvas.width;
 	
-	renderField(fields[currentFieldIndex],0,0,canvasSize);
+	renderField(fields[currentFieldIndex],0,0,canvasSize/2);
+	renderField(fields[currentFieldIndex],canvas.width/2,canvas.height/2,canvasSize/2);
 	
 	ctx.fillStyle = "black";
 	ctx.strokeRect(1,1,canvas.width-2,canvas.height-2);
