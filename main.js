@@ -8,11 +8,14 @@ var ctx;
 var divCurrency;
 var scientific;
 var title;
+var darkTheme;
+
 //Game Data Variables
 var fields = [];
 var fieldData = {};
 var currentFieldIndex = 0;
 var balance = {};
+var upgrades = {};
 
 //----------------------\\
 //----GAME FUNCTIONS----\\
@@ -36,6 +39,7 @@ var FieldData = function(){
 	this.growthPower = 0.05;
 	this.totalTicks = 0;
 	this.moneyMade = new Number(0,0);
+	this.upgrades;
 }
 
 function initField(data){
@@ -47,15 +51,13 @@ function initField(data){
  	}
 }
 
-
-
-
-
-
-
-
-
-
+var Upgrade = function(currencyType, getPrice, count){
+	
+	this.currencyType = currencyType;
+	this.getPrice = getPrice;
+	this.count = count==null?0:count;
+	
+}
 
 
 
@@ -155,14 +157,16 @@ var Number = function(value, exponent){
 	}
 	
 	this.makeLookGood = function(){
+		let groups = ["", "K", "M", "B", "T", "Qu", "Qt", "Sx", "Sp", "O", "N", "D", "Ud", "Dd", "Td", "Qud", "Qtd"];
+
 		if(scientific.checked){
 			let e = Math.floor(this.value*10)/10;
 			if((""+e).length == 1)
 				e += ".0";
-			return e + "e" + this.exponent;
+			return e + this.exponent==0?"":("e" + this.exponent);
 		} else {
-			let groups = ["", "K", "M", "B", "T", "Qu", "Qt", "Sx", "Sp", "O", "N", "D", "Ud", "Dd", "Td", "Qud", "Qtd"];
 			let v = this.value * Math.pow(10, this.exponent%3);
+
 			let r = v > 100 ? 1 : v > 10 ? 10 : 100;
 			let s = "" + (this.exponent>0?Math.floor(v*r)/r:Math.floor(this.value*Math.pow(10,this.exponent)*100)/100);
 			if(s.split(".").length == 1 && r != 1)
@@ -232,6 +236,38 @@ function growField(data){
 
 }
 
+function removeDark(elem){
+	classes = elem.class.split(" ");
+	let darkPos=0;
+	while((darkPos=classes.indexOf("dark"))!=-1){
+		classes.splice(darkPos,1);
+	}
+	elem.class = classes.join(" ");
+}
+
+function addDark(elem){
+	if(elem.class == undefined)
+		elem.class = "dark";
+	else
+		elem.class += " dark";
+	console.log("boop");
+}
+
+function updateTheme(){
+		var left = [document.body];
+		while(left.length > 0){
+			if(darkTheme.checked)
+				addDark(left[0]);
+			else
+				removeDark(left[0]);
+			for(var i = 0; i < left[0].childElementCount; i++){
+				left.push(left[0].childNodes[i]);
+				console.log(left[0].childNodes[i]);
+			}
+			left.splice(0,1);
+		}
+}
+
 function tick(){
 	
 	let field = fields[currentFieldIndex];
@@ -287,8 +323,19 @@ function updateCurrency(currency){
 //---OTHER FUNCTIONS---\\
 //---------------------\\
 
+function encode(str){
+	return str << 3;
+}
+function decode(str){
+	return str >> 3;
+}
+
 function initAllFields(){
 	fields.push(new Field("Lawn", [[64, 193, 0], [65, 124, 36], [0, 247, 103], [205, 0, 247], [198, 0, 145], [150, 24, 61]], [255, 0, 0]));
+}
+
+function initAllUpgrades(){
+	
 }
 
 function save(){
@@ -373,6 +420,7 @@ function setup(){
 	divCurrency = document.getElementById("currencies");
 	scientific = document.getElementById("scientific");
 	title = document.getElementById("title");
+	darkTheme = document.getElementById("darkTheme");
 	initAllFields();
 	load();
 }
@@ -408,8 +456,7 @@ function render(){
 	
 	let canvasSize = canvas.width;
 	
-	renderField(fields[currentFieldIndex],0,0,canvasSize/2);
-	renderField(fields[currentFieldIndex],canvas.width/2,canvas.height/2,canvasSize/2);
+	renderField(fields[currentFieldIndex],0,0,canvasSize);
 	
 	ctx.fillStyle = "black";
 	ctx.strokeRect(1,1,canvas.width-2,canvas.height-2);
