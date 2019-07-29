@@ -3,8 +3,9 @@
 
 	<head>
 		<title>Lawnmowing Game 2</title>
+		<script src="number.js" type="text/javascript"></script>
 		<script src="main.js" type="text/javascript"></script>
-		<link href="style.css" rel="stylesheet" type="text/css"/>
+		<link id="style" href="style.css" rel="stylesheet" type="text/css"/>
 	</head>
 
 	<body>
@@ -13,17 +14,31 @@
 		
 		<div id="currencyDiv" class="container">
 
-			<div id="currency" class="container title">Currencies</div>
+			<div id="currency" class="container title"><span>Currencies</span></div>
 		</div>
+		
+		<div id="fieldUpgradesDiv" class="container">
+
+			<div id="fieldUpgrades" class="container title"><span>Field Upgrades</span></div>
+		</div>
+		
+		<div id="upgradesDiv" class="container">
+
+			<div id="upgrades" class="container title"><span>Upgrades</span></div>
+		</div>
+		
+		
 
 		<canvas id="canvas"></canvas>
 		
 		<div id="settings" class = "container">
-			<div class="container title">Settings</div>
+			<div class="container title"><span>Settings</span></div>
 			<p/>
 			<input id="scientific" type="checkbox">Scientific</input>
 			<p/>
-			<input id="darkTheme" type="checkbox" onclick="updateTheme">Dark Theme</input>
+			<input id="darkTheme" type="checkbox" onclick="updateTheme()">Dark Theme</input>
+			<p/>
+			<input id="colorBlind" type="checkbox">Color Blind</input>
 		</div>
 	</body>
 

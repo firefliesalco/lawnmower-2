@@ -1,14 +1,18 @@
 //---------------------\\
 //------VARIABLES------\\
-//---------------------\\
+//---------------------\\dark
 
 //HTML Variables
 var canvas;
 var ctx;
 var divCurrency;
+var divFieldUpgrades;
+var divUpgrades;
 var scientific;
 var title;
 var darkTheme;
+var style;
+var colorblind;
 
 //Game Data Variables
 var fields = [];
@@ -34,7 +38,7 @@ var FieldData = function(){
 	var timeout;
 	this.x = 0;
 	this.y = 0;
-	this.maxGrowth = 2;
+	this.maxGrowth = 1;
 	this.growthSpeed = 10;
 	this.growthPower = 0.05;
 	this.totalTicks = 0;
@@ -51,8 +55,9 @@ function initField(data){
  	}
 }
 
-var Upgrade = function(currencyType, getPrice, count){
-	
+var Upgrade = function(name, tooltip, currencyType, getPrice, count){
+	this.name = name;
+	this.tooltip = tooltip;
 	this.currencyType = currencyType;
 	this.getPrice = getPrice;
 	this.count = count==null?0:count;
@@ -62,123 +67,6 @@ var Upgrade = function(currencyType, getPrice, count){
 
 
 //Other Game Functions
-function createNumber(base){
-	let v = base;
-	let e = 0;
-	while(v >= 10){
-		v /= 10;
-		e++;
-	}
-	while(v < 1){
-		v *= 10;
-		e--;
-	}
-	return new Number(v, e);
-}
-
-function cloneNumber(num){
-	return new Number(num.value, num.exponent);
-}
-
-var Number = function(value, exponent){
-	
-	this.value = value;
-	this.exponent = exponent;
-	
-	this.add = function(number){
-		if(this.exponent - number.exponent < 10){
-			this.value += number.value * Math.pow(10, number.exponent - this.exponent);
-			while(this.value >= 10){
-				this.value /= 10;
-				this.exponent++;
-			}
-		}
-	}
-	
-	this.subtract = function(number){
-		if(this.exponent - number.exponent < 10){
-			this.value -= number.value * Math.pow(10, number.exponent - this.exponent);
-			while(this.value < 1){
-				this.value *= 10;
-				this.exponent--;
-			}
-		}
-	}
-	
-	this.multiply = function(number){
-		this.exponent += number.exponent;
-		this.value *= number.value;
-		if(this.value != 0){
-			while(this.value >= 10){
-				this.value /= 10;
-				this.exponent++;
-			}
-			while(this.value < 1){
-				this.value *= 10;
-				this.exponent--;
-			}
-		}
-	}
-	
-	this.divide = function(number){
-		
-		this.exponent -= number.exponent;
-		this.value /= number.value;
-		if(this.value != 0){
-			while(this.value >= 10){
-				this.value /= 10;
-				this.exponent++;
-			}
-			while(this.value < 1){
-				this.value *= 10;
-				this.exponent--;
-			}
-		}
-	}
-	
-	this.compare = function(number){
-		
-		if(this.exponent > number.exponent){
-			return 1;
-		} else {
-			if(this.exponent == number.exponent){
-				if(this.value > number.value)
-					return 1;
-				else if(this.value < number.value)
-					return -1;
-				else
-					return 0;
-			} else {
-				return -1;
-			}
-		}
-		return 0;
-		
-	}
-	
-	this.makeLookGood = function(){
-		let groups = ["", "K", "M", "B", "T", "Qu", "Qt", "Sx", "Sp", "O", "N", "D", "Ud", "Dd", "Td", "Qud", "Qtd"];
-
-		if(scientific.checked){
-			let e = Math.floor(this.value*10)/10;
-			if((""+e).length == 1)
-				e += ".0";
-			return e + this.exponent==0?"":("e" + this.exponent);
-		} else {
-			let v = this.value * Math.pow(10, this.exponent%3);
-
-			let r = v > 100 ? 1 : v > 10 ? 10 : 100;
-			let s = "" + (this.exponent>0?Math.floor(v*r)/r:Math.floor(this.value*Math.pow(10,this.exponent)*100)/100);
-			if(s.split(".").length == 1 && r != 1)
-				s+= ".";
-			while((r == 100 && s.split(".")[1].length < 2) || (r == 10 && s.split(".")[1].length < 1))
-				s += "0";
-			return s + (this.exponent > 0 ? " " + groups[Math.floor(this.exponent/3)] : "");
-			
-		}
-	}
-	
-}
 
 
 
@@ -236,36 +124,14 @@ function growField(data){
 
 }
 
-function removeDark(elem){
-	classes = elem.class.split(" ");
-	let darkPos=0;
-	while((darkPos=classes.indexOf("dark"))!=-1){
-		classes.splice(darkPos,1);
-	}
-	elem.class = classes.join(" ");
-}
 
-function addDark(elem){
-	if(elem.class == undefined)
-		elem.class = "dark";
-	else
-		elem.class += " dark";
-	console.log("boop");
-}
 
 function updateTheme(){
-		var left = [document.body];
-		while(left.length > 0){
-			if(darkTheme.checked)
-				addDark(left[0]);
-			else
-				removeDark(left[0]);
-			for(var i = 0; i < left[0].childElementCount; i++){
-				left.push(left[0].childNodes[i]);
-				console.log(left[0].childNodes[i]);
-			}
-			left.splice(0,1);
-		}
+	if(darkTheme.checked){
+		style.href = "style-dark.css";
+	}else{
+		style.href = "style.css";
+	}
 }
 
 function tick(){
@@ -334,8 +200,49 @@ function initAllFields(){
 	fields.push(new Field("Lawn", [[64, 193, 0], [65, 124, 36], [0, 247, 103], [205, 0, 247], [198, 0, 145], [150, 24, 61]], [255, 0, 0]));
 }
 
-function initAllUpgrades(){
+function loadUpgrade(upgrade, isField){
+	var e = document.createElement("input");
+	e.type = "button";
+	e.innerHTML = upgrade.name;
+	addTooltip(e, upgrade.tooltip);
+	e.onclick = function() { console.log("lol not yet"); }
+	e.id = "u_" + camelfy(upgrade.name);
+	if(isField)
+		divFieldUpgrades.appendChild(e);
+	else
+		divUpgrades.appendChild(e);
+}
+
+function initUpgrades(string){
+
+
+}
+
+function addTooltip(e, t){
 	
+	var tt = document.createElement("div");
+	tt.classList = "tooltip";
+	var ttt = document.createElement("p");
+	ttt.classList = "tooltiptext";
+	ttt.innerHTML = t;
+	tt.appendChild(ttt);
+	e.appendChild(tt);
+	
+}
+
+function camelfy(str){
+	
+	split = str.split(" ");
+	let finish = split[0].toLowerCase();
+	for(var i = 1; i < split.length; i++){
+		finish += split[i].substring(0, 1).toUpperCase() + split[i].substring(1).toLowerCase();
+	}
+	return finish;
+}
+
+function initFieldUpgrades(field, data, string){
+	let up = new Upgrade("Tick Speed", "Decreases time between ticks by 5%", "Money", function(){return new Number(0, 0)}, 0);
+	loadUpgrade(up, false);
 }
 
 function save(){
@@ -378,15 +285,16 @@ function loadDataInt(id, str, def){
 }
 
 function loadDataNum(id, str, def){
-	
 	if(str==null)
 		return def;
 	split = str.split(";");
 	split.forEach(function(item){
 		data = item.split("=");
 		data2 = data[1].split("e");
-		if(data[0]==id)
-			return new Number(+data2[0],+data2[1]);
+		if(data[0]==id){
+			console.log(data2);
+			def = new Number(+data2[0],+data2[1]);
+		}
 	});
 	return def;
 	
@@ -394,6 +302,7 @@ function loadDataNum(id, str, def){
 
 function loadCurrency(str, currency, update){
 	balance[currency] = loadDataNum(currency, str, new Number(0, 0));
+	console.log(balance[currency]);
 	if(update)
 		updateCurrency(currency);
 }
@@ -403,24 +312,30 @@ function load(){
 		let data = new FieldData();
 		let save = localStorage.getItem(field.id);
 		data.size = loadDataInt("size", save, 10);
-		data.timeout = loadDataInt("timeout", save, 50);
+		data.timeout = loadDataInt("timeout", save, 1000);
 		initField(data);
 		fieldData[field.id] = data;
+		initFieldUpgrades(field, data, save);
 	});
 	
 	let currency = localStorage.getItem("currencies");
 	loadCurrency(currency, "Money", true);
 	loadCurrency(currency, "Mulch");
 	loadCurrency(currency, "Mold");
+	initUpgrades(localStorage.getItem(upgrades));
 }
 
 function setup(){
 	canvas = document.getElementById("canvas");
 	ctx = canvas.getContext("2d");
 	divCurrency = document.getElementById("currencies");
+	divUpgrades = document.getElementById("upgradesDiv");
+	divFieldUpgrades = document.getElementById("fieldUpgradesDiv");
 	scientific = document.getElementById("scientific");
 	title = document.getElementById("title");
 	darkTheme = document.getElementById("darkTheme");
+	style = document.getElementById("style");
+	colorblind = document.getElementById("colorBlind");
 	initAllFields();
 	load();
 }
@@ -444,8 +359,13 @@ function renderField(field, px, py, size){
 			ctx.fillRect(x*tileSize+px, y*tileSize+py, tileSize+1, tileSize+1);
 		}
 	}
-
-	ctx.fillStyle = "rgb(" + field.mColor[0] + "," + field.mColor[1] + "," + field.mColor[2] + ")";
+	if(colorblind.checked)
+		if(darkTheme.checked)
+			ctx.fillStyle = "white";
+		else
+			ctx.fillStyle = "black";
+	else
+		ctx.fillStyle = "rgb(" + field.mColor[0] + "," + field.mColor[1] + "," + field.mColor[2] + ")";
 	ctx.fillRect(data.x*tileSize+px, data.y*tileSize+py,tileSize,tileSize);
 	
 	
@@ -464,7 +384,6 @@ function render(){
 }
 
 window.onload = function(){
-	console.log("Loaded");
 	setup();
 	
 	setInterval(render, 40);
